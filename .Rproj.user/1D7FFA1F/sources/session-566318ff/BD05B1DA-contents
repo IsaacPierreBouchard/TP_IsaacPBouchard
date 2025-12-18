@@ -1,0 +1,130 @@
+#Classification des réclamations assurance-vie
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+install.packages("caret")
+library(tidyverse)
+library(caret)
+# 1) Créer le jeu de données
+set.seed(3035)
+
+n <- 1000
+donnees <- tibble(
+  age = runif(n, 20, 70),
+  imc = rnorm(n=n, mean = 25, sd = 5),
+  tension_arterielle = rnorm(n, 120, 15),
+  cholesterol = rnorm(n, 200, 30),
+  fumeur = sample(c("oui", "non"), n, replace = T, prob = c(0.2 , 0.8)),
+  antecedents_familiaux = sample(c("oui", "non"), n, replace = T),
+  frequence_exercice = sample(c("faible", "moyenne", "élevée"), n, replace = T)
+)
+
+View(donnees)
+
+#Avec les données ci-haut, nous avons 1000 polices d'assurance-vie
+
+donnees <- donnees %>% 
+  mutate(
+    proba_reclamation=0.01+
+      0.001*(age-20)+
+      0.02*(imc-25)+
+      0.002*(tension_arterielle-120)+
+      0.001*(cholesterol-200)+
+      0.1*(fumeur=="oui")+
+      0.05*(antecedents_familiaux=="oui")-
+      0.05*(frequence_exercice=="élevée"),
+    reclamation=rbinom(n, 1, proba_reclamation)
+) %>% select(-proba_reclamation)
+
+# Il y a une erreur car il y a des probabibiltés plus grandes que 1
+
+dim(donnees)
+# On remarque que nous avons 7 variables explicatives 
+# et une variable réponse qu'on essaie de prédire.
+# On remarque aussi que la variable proba_reclamation contient des valeurs
+# hors des bornes [0,1], on va laisser cette question en dehors du cours 3035.
+
+# 2) Analyse exploratoire des données
+
+donnees %>% 
+  select(where(is.numeric)) %>% 
+  cor() %>% 
+  heatmap(Rowv = NA, Colv = NA)
+#Ca nous montre une corrélation entre imc-age-tension_arterielle.
+#Continuons l'analyse exploratoire.
+
+#Regardons la variable réponse (celle que nous allons estimer).
+
+ggplot(donnees, aes(x=factor(reclamation)))+geom_bar()
+
+ggplot(donnees, aes(x=age, y=cholesterol), color=factor(reclamation))+
+  geom_point()
+
+#Depuis le nuage de points précédent, il n'est pas possible de tirer
+#de conclusion sur les tendances entre les variables
+
+# 3) On va faire un pré-traitement des données (préparation
+# à construire un modèle de régression logistique)
+
+donnnees <- donnees %>%
+  mutate(across(where(is.character), as.factor))
+
+x <- donnees %>% select(-reclamation)
+y <- donnees$reclamation
+
+indice_repartition <- sample(1:n, size = floor(0.8*n))
+x_train <- x[indice_repartition,]     # "," car veut toutes les colonnes
+x_test <- x[-indice_repartition,]
+y_train <- y[indice_repartition]
+y_test <- y[-indice_repartition]
+
+print(paste("Dimension des données train: ", 
+            paste(dim(x_train), collapse = " x ")))
+print(paste("Dimension des données train: ", 
+            paste(dim(x_test), collapse = " x ")))
+
+
+# 4) Ajustemet du modèle de régression logistique
+
+modele_reglog <- glm(reclamation ~ .,
+                     data = cbind(x_train,
+                                  reclamation=y_train),
+                     family = binomial()
+                     )
+
+summary(modele_reglog
+
+y_pred <- predict(modele_reglog, newdata = x_test,
+                  type= "response")
+y_pred_class <- ifelse(y_pred, 1, 0)
+
+
+pr <- function(age,
+                                    imc,
+                                    tension_arterielle,
+                                    cholesterol,
+                                    fumeur,
+                                    antecedents_familiaux,
+                                    frequence_exercice){
+  nouvelles_donnees <- tibble(
+    age=age,
+    imc=imc,
+    tension_arterielle=tension_arterielle,
+    cholesterol=cholesterol,
+    fumeur=factor(fumeur, levels = levels(x_train$fumeur)),
+    antecedents_familiaux=factor(antecedents_familiaux, levels = levels(x_train$antecedents_familiaux)),
+    frequence_exercice=factor(frequence_exercice, levels = levels(x_train$frequence_exercice)))
+    predict(modele_reglog, newdata = nouvelles_donnees, type = "response")
+}
+
+prob <- pr(age = 35, 25, 130, 220, "non", "oui", "moyenne")
+
+
+
+
+
+
+
+
+
+
+
+

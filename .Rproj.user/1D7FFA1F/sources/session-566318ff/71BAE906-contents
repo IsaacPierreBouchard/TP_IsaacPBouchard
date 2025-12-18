@@ -1,0 +1,127 @@
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+install.packages("tidyverse")
+library(tidyverse)
+
+set.seed(6100)
+n_assures <- 1000
+
+#Créer une variable des âges des mes assurés se situant
+#entre 18 et 85 ans
+age_min <- 18
+age_max <- 85
+ages <- round(runif(n_assures,age_min,age_max)) 
+
+#Créer une variable bonus_malus entre 50 et 150
+bonus_malus <- runif(n_assures,50,150)
+
+#Créer une variable acienté entre 0 et 20
+anciente <- round(runif(n_assures,0,20))
+
+#On va inventer que le nb de sinistres suit une poisson
+nb_sinistres <- rpois(n_assures,.2)
+
+#On va dire que les coûts de sinistres suivent une
+#lognormale
+?rlnorm
+#moyenne = 7
+#ecart-type = 1
+
+cout_sinistre <- rlnorm(n_assures,7,1)
+
+#formule préferable mais on veut introduire if 
+cout_sinistre*nb_sinistres 
+#on introduit if
+
+#ce qu'on veut est une fonction qui permet de mettre 0$ 
+#à ceux qui ont 0 sinstre et bcp de $ à ceux qui ont plus de 
+#sinistres
+
+generer_couts <- function(nb_sinistres){
+  if (nb_sinistres==0) return(0)
+  (sum(rlnorm(nb_sinistres,meanlog = 7,sdlog = 1)))
+}
+generer_couts(nb_sinistres=0)
+generer_couts(nb_sinistres=1)
+
+#au lieu d'écrire nb_sinistres=0 =1 =2 on va mettre
+
+cout_totaux <- sapply(nb_sinistres, generer_couts)
+
+portefeuille <- data.frame(
+  id = 1:n_assures,
+  age_assure=ages,
+  bonus_malus=bonus_malus,
+  anciente=anciente,
+  nb_sinistres=nb_sinistres,
+  cout_total=cout_totaux
+)
+view(portefeuille)
+
+#petit problème. Incohérence entre age et ancienté
+#à revoir (pt à l'exam)
+
+categorie_age <- cut(
+  portefeuille$age_assure,
+  breaks = c(0,25,50,70,Inf),
+  labels = c("Jeunes", "Adulte", "Senior", "Ainé"),
+  right = F
+)
+
+#portefeuille$Cat_age <- categorie_age
+
+?cut
+#avec dplyr
+
+portefeuille <- portefeuille %>% 
+  mutate(categorie_age=cut(
+    age_assure,
+    breaks = c(0,25,50,70,Inf),
+    labels = c("Jeunes", "Adulte", "Senior", "Ainé"),
+    right = F
+  )
+)
+
+#par cat_age je veux savoir le nb_assure, nb_sinistres, 
+#la moyenne des couts, la moyenne de bonus_malus et 
+#le faire avec dplyr (utiliser le piping)
+
+stats_cat_age <- portefeuille %>% 
+  group_by(categorie_age) %>% 
+  summarise(
+    nb_assures=n(),
+    nb_sinistres_moyen=mean(nb_sinistres),
+    cout_moyen=mean(cout_total),
+    bonus_malus_moyen=mean(bonus_malus)
+  )
+
+#dernier exemple, détecter les cas lourds pour
+#antisélection ou tarif individuelle
+
+#trouver les cas qui ont plus que 2 sinistres ou 
+#réclamation plus que 1000
+#afficher en triant en ordre décroissant
+#on va les appeler assurés à risque
+
+assures_risque <- portefeuille %>% 
+  filter(nb_sinistres>2 | cout_total>1000) %>% 
+  arrange(desc(cout_total))
+
+View(assures_risque)
+
+#ce symbole | est pour faire un "ou" et pour un "et" c'est &
+
+  
+#pour si tu veux reutiliser qqch jsp trop
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+save(assures_risque,file ="assures_risque.RData")
+
+save(portefeuille,file = "portefeuille.RData")
+
+load("assures_risque.RData")
+
+
+
+
+
+
+

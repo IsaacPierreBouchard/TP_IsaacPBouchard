@@ -1,0 +1,179 @@
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+library(dplyr)
+library(ggplot2)
+
+#On load les infos du dernier cours
+load("C:/Users/isaac/OneDrive/Desktop/ACT3035/portefeuille.RDAta")
+
+portefeuille <- portefeuille %>% 
+  rename(age=age_assure, anciennete=anciente)
+
+#tester le nom des colonnes
+colnames(portefeuille)
+
+# *** Il ne faut pas faire ça, c'est juste un exemple de boucle ***
+#Regarder les assurés qui ont >2 sinistres ou >1000 de cout
+seuil_nb <- 2         #seuil sur le nb de sinistres
+seuil_cout <- 1000    #seuil sur le cout en $
+
+n <- nrow(portefeuille)   #nb d'assurés (ou observations dans 
+                          #portefeuille)
+
+a_risque <- logical(n)    #un vecteur pré-aloué (vide) logique de 
+                          #longueur n avec valeur False par défaut
+
+for(i in 1:n) {
+  freq_ok <- portefeuille$nb_sinistres[i]>seuil_nb
+  cout_ok <- portefeuille$cout_total[i]>seuil_cout
+  a_risque[i] <- (freq_ok | cout_ok) #au moins une des conditions vrai
+}
+
+# Essayer d'appliquer une franchise de 200$ et un plafond de 20 000$
+# pour chaque assuré ligne par ligne en calculant le coût net.
+# Encore une fois juste un exemple, il ne faut pas le faire avec
+# les boucles mais plutôt avec les vecteurs.
+
+franchise <- 200
+plafond <- 20000
+cout_net_for <- numeric(n)
+
+for(i in 1:n) {
+  x <- max(portefeuille$cout_total[i]-franchise,0)
+  cout_net_for[i] <- min(x,plafond)
+}
+portefeuille$cout_net_for <- cout_net_for
+mean(portefeuille$cout_net_for)
+
+#Ce qu'on cherche à faire mais on peut faire 100000000000 mieux
+#en vectorisant
+
+?pmax
+
+# créer une fonction "applique_franchise" qui permet d'appliquer
+# la franchise avec la fonction pmax sur les 2 vecteurs en parallèle
+
+applique_franchise <- function(cout, franchise=0){  #écrit =0 pour que ca soit la valeur par défaut
+  pmax(cout-franchise,0)
+}
+
+
+applique_plafond <- function(cout, plafond=1000000){
+  pmin(cout, plafond)
+}
+
+prime_commercial <- function(prime_pure, frais=.25, taxes=.09){
+  prime_pure*(1+frais)*(1+taxes)
+}
+
+# Dans les données portefeuille, appliquer : franchise, plafond
+# pour obtenir la prime pure et calculer la prime commerciale
+
+portefeuille <- portefeuille %>% 
+  mutate(
+    couts_apres_franchise=applique_franchise(cout_total, 200),
+    cout_net=applique_plafond(couts_apres_franchise, 20000),
+    prime_pure=cout_net,
+    prime_com=prime_commercial(prime_pure, .25, 0.09)
+  )
+
+portefeuille %>% 
+  summarise(
+    prime_pure_moy=mean(prime_pure),
+    prime_com_moy=mean(prime_com)
+  )
+
+
+portefeuille %>% 
+  filter(cout_total>0) %>% 
+  ggplot(aes(x=cout_total))+
+  geom_histogram(bins = 30)+
+  labs(title = "Distribution des sinistres",
+       x="Coût total", y="Effectif")+
+theme_linedraw()
+
+#voir si certaines catégories d'âge coûtent plus en moyenne
+
+portefeuille %>% 
+  group_by(categorie_age) %>% 
+  summarise(cout_net_moyen=mean(cout_net)) %>% 
+  ggplot(aes(x=categorie_age, y=cout_net_moyen))+
+  geom_col()+
+  labs(title = "Coût net moyen par catégorie d'âge",
+       x=NULL,
+       y="Coût net moyen")
+
+#Essayer de visualiser la tendance des coûts en fonction de l'âge
+#(on utilisera une fonction de lissage)
+
+portefeuille %>% 
+  select(cout_total, age) %>% 
+  filter(cout_total>0) %>% 
+  ggplot(aes(x=age, y=cout_total))+
+  geom_point(alpha=0.39)+
+  geom_smooth(method = "loess")+ #pas à savoir (ça serait donné)
+  scale_y_log10()+
+  labs(title= "Relation âge-coût (échelle log)",
+       x="Âge",
+       y="Coût total")
+
+#quiz est sur tout ce qu'il y a avant régression et classification'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,24 @@
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+library(dplyr)
+library(tidyverse)
+data <- read.csv("inspections-preventives-salubrite-habitation.csv")
+View(data)
+
+#Je vais supprimer les lignes où il  y a des valeurs NA
+data_clean <- na.omit(data)
+View(data_clean)
+test
+
+
+
+
+
+
+
+
+
+
+
+
+
+

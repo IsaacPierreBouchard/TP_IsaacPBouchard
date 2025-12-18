@@ -1,0 +1,57 @@
+setwd("C:/Users/isaac/OneDrive/Desktop/ACT3035")
+data <- read.csv("https://raw.githubusercontent.com/nmeraihi/data/refs/heads/master/insurance.csv")
+View(data)
+
+colnames(data)
+
+#lm pour linear model
+model_lm <- lm(charges ~ age+bmi, data=data)
+summary(model_lm)
+
+#prime_exemple pour un assuré de 35 ans et dont le bmi est de 24 (utilise les 
+#données du summary pour le faire (intercept de age et bmi))
+
+prime_exemple=-6424.80+241.93*35+332.97*24
+
+prime_exemple2=-6424.80+241.93*25+332.97*26.220
+prime_exemple2=y_hat_i
+y_i=2721.321
+
+# le "." fait que c'est toutes les variables de data 
+model_lm <- lm(charges ~ ., data=data)
+summary(model_lm)
+#le intercept -11938.5 c'est le alpha (quand toutes les variables valent 0)
+
+data$age_2 <- data$age**2
+
+model_lm <- lm(charges ~ ., data=data) 
+summary(model_lm)
+
+model_lm_2 <- lm(charges ~ age_2+bmi+children+smoker, data=data)
+summary(model_lm_2)
+
+data$predits <- predict(model_lm_2, data)
+View(data)
+
+#Calculer la prime d'un assuré âgé de 30 ans qui a 2 enfants dont le bmi
+# = 30 et fume
+
+predict(model_lm_2, data.frame(age_2=30**2,
+                               bmi=30,
+                               children=2,
+                               sex="male",
+                               smoker="yes"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+

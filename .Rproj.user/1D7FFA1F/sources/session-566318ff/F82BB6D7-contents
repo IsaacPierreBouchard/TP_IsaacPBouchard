@@ -1,0 +1,132 @@
+
+install.packages("tidyverse")
+library(tidyverse)
+
+set.seed(3035)
+# ctrl+L ca nettoie la console à droite
+
+?sprintf()
+
+police_ID <- sprintf("PL-%03d", 1:8)
+
+assures <- tibble(
+  police_ID=police_ID, 
+  age=c(22,20,35,41,47,53,60,38),
+  prime=c(180, 220, 310, 400, 430, 470, 520, 360)
+                  )
+assures
+
+#array: tableau multi-dimensions qui homogène 
+#tous les éléments du même type
+
+facteur <- array(
+  data=runif(3*2*2, 0, 0.2),
+  dim = c(3, 2,2),
+  dimnames = list(
+    mois=c("Janvier","Février", "Mars"),
+    provinces=c("Québec", "Ontario"),
+    scenario=c("Haut", "Bas")
+  )
+  )
+
+facteur
+
+#List : Boite à compartiments hétérogène
+#On peut mixer tout type; vecteur (tout type), nombre, tibble, graphique
+
+conteneur <- list(
+  table_assures=assures,
+  province = c("Québec", "Ontario", "ALberta", "Colombie-Britannique", "Nouvelle-Écosse"),
+  nom_de_objet="Portefeuille assures IARD"
+)
+conteneur$province
+conteneur$nom_de_objet
+
+read.csv("businesses.csv")
+resto_mtl <- read.csv("businesses.csv")
+View(resto_mtl)
+
+violation <- read.csv("violations.csv")
+View(violation)
+
+#est-ce que toutes les infos de resto_mtl se retrouvent
+#dans violations?
+
+library(dplyr)
+
+select(violation,
+       business_id,
+       date_jugement,
+       montant, 
+       etablissement )
+
+head(select(violation,
+       business_id,
+       date_jugement,
+       montant, 
+       etablissement ))
+
+#appliquer le piping
+#avce ctrl+shift+M ( %>% )
+violation %>% select(business_id,
+                     date_jugement,
+                     montant, 
+                     etablissement )
+
+violation %>% select(business_id,
+       date_jugement,
+       montant,
+       etablissement,
+       ville) %>%
+    filter(montant>1000)
+  
+#Combien de condamnation par villes avec montant > 1000
+
+violation %>% select(business_id,
+                     date_jugement,
+                     montant,
+                     etablissement,
+                     ville) %>%
+  filter(montant>1000) %>% 
+  group_by(ville) %>% 
+  summarise(nombre=n())  
+
+violation %>% select(business_id,
+                     date_jugement,
+                     montant,
+                     etablissement,
+                     categorie,
+                     ville) %>%
+  filter(montant>1000) %>% 
+  group_by(categorie) %>% 
+  summarise(nombre=n()) %>%  
+  arrange(desc(nombre))
+#une autre version plus propre
+#dans un nouveau frame appelé violation_categorie_1000_pl
+
+violation_categorie_1000_pl <- violation %>% select(montant,
+                     categorie) %>%
+  filter(montant>1000) %>% 
+  group_by(categorie) %>% 
+  summarise(nombre=n()) %>%  
+  arrange(desc(nombre))
+
+violation_categorie_1000_pl
+
+?left_join
+
+left_join(x=violation,
+          y=resto_mtl,
+          by="business_id") %>% 
+    select(business_id,
+         date_jugement,
+         montant,
+         etablissement,
+         ville,
+         categorie,
+         latitude,
+         longitude)
+
+
+
+
